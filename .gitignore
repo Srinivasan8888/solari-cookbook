@@ -6,3 +6,6 @@ __pycache__/
 .venv/
 venv/
 screenshot.png
+
+# understudy: the benchmark claims reproducibility, so the lockfile ships.
+!understudy/package-lock.json

@@ -1,0 +1,19 @@
+{
+  "name": "understudy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo-site": "tsx demo-site/serve.ts"
+  },
+  "dependencies": {
+    "playwright": "^1.56.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11"
+  }
+}
