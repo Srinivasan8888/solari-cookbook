@@ -73,6 +73,17 @@ describe("compile", () => {
     expect(step.postcondition).toEqual({ type: "domChanged" })
   })
 
+  it("gives extract a presence postcondition, since reading changes nothing", () => {
+    const trace: Trace = {
+      ...base,
+      steps: [{ ...base.steps[0]!, action: "extract", as: "status" }],
+    }
+    const step = compile(trace, "f").steps[1]
+    if (step?.action !== "extract") throw new Error("expected extract")
+    // domChanged here would be unsatisfiable: a read mutates nothing.
+    expect(step.postcondition).toEqual({ type: "selectorVisible", value: "#export-btn" })
+  })
+
   it("turns a fill value into an input placeholder", () => {
     const trace: Trace = {
       ...base,

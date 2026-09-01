@@ -72,7 +72,14 @@ function fallbacksFor(node: SnapshotNode): string[] {
  * refuses to parse a healable step without a postcondition, because a repair
  * with nothing to verify against is a guess that reports itself as success.
  */
-function postconditionFor(step: TraceStep): Postcondition {
+function postconditionFor(step: TraceStep, node: SnapshotNode): Postcondition {
+  // `extract` reads; it changes nothing. Inferring domChanged for it would
+  // produce a step that can never pass. What a read step can assert is that
+  // the thing it read was actually present.
+  if (step.action === "extract") {
+    return { type: "selectorVisible", value: node.selector }
+  }
+
   if (step.urlAfter !== step.urlBefore) {
     const before = step.urlBefore
     const after = step.urlAfter
@@ -105,7 +112,7 @@ export function compile(trace: Trace, name: string): FlowSpec {
       history: [],
     }
     const id = `s${i + 1}`
-    const postcondition = postconditionFor(traceStep)
+    const postcondition = postconditionFor(traceStep, node)
 
     switch (traceStep.action) {
       case "click":
