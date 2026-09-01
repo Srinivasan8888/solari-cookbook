@@ -2,7 +2,24 @@
 
 **Date:** 2026-09-01
 **Status:** approved for planning
-**One line:** An LLM drives a browser once to learn a web task; that run compiles into a deterministic Playwright program that replays forever at zero LLM cost, and when the page drifts, one cheap call repairs the single step that broke.
+**One line:** A compiler for web tasks. The LLM is the compiler, not the runtime.
+
+```
+goal + site   ──▶  compiler   ──▶  flow.json   ──▶  runtime    ──▶  result
+  (source)          (LLM, once)      (artifact)     (deterministic,
+                                                     zero LLM)
+                         ▲                               │
+                         └──── incremental recompile ◀────┘
+                              (one step, on drift)
+```
+
+Understudy is not an agent that browses. It is a compiler whose target is a deterministic
+program, plus a runtime that executes it, plus an incremental recompiler that touches one
+step when the source language — the website — changes underneath it.
+
+This framing is load-bearing and it governs the vocabulary throughout: **source, compiler,
+artifact, runtime, recompile.** An agent that gets faster is a nice optimization. A compiler
+is a different category of thing, and it is the honest description of what this does.
 
 ---
 
@@ -32,7 +49,9 @@ Four commands over one artifact.
 | `understudy learn "<goal>" --url <url>` | expensive, once | LLM drives the browser, emits `flows/<name>.json` (`--name`, else a slug of the goal) |
 | `understudy run <name> --input k=v` | **$0 on the happy path** | Deterministic replay; prints `llmCalls: 0` unless a step drifted and healed |
 | `understudy serve` | $0 | `POST /flows/:name` — typed JSON in, typed JSON out |
-| `understudy drift` | $0 | Runs every flow with healing **off**; reports what the web broke |
+| `understudy drift` | **$0, always** | Runs every flow with healing **off**; exits non-zero on breakage. The CI command |
+| `understudy diff <name>` | $0 | Selector-level history of every automatic repair, with the run that triggered it |
+| `understudy bench` | ~$0.03 | Produces `benchmarks.json` — the artifact that proves the thesis (§11) |
 
 Dataflow:
 
@@ -70,8 +89,13 @@ The central artifact. Committed to git, diffable, human-editable.
         "anchor": {
           "role": "button",
           "name": "Export CSV",
-          "nearText": ["Invoices", "August 2026"],
-          "depth": 4
+          "nameNormalized": "export csv",
+          "attrs": { "testId": null, "name": "export", "type": "submit" },
+          "nearText": ["Invoices", "August 2026", "12 results"],
+          "landmarks": ["main", "region[Invoices]"],
+          "siblingOrdinal": 2,
+          "siblingRole": "button",
+          "textFingerprint": ["export", "csv", "download"]
         }
       },
       "postcondition": { "type": "urlContains", "value": "/download" },
@@ -84,7 +108,21 @@ The central artifact. Committed to git, diffable, human-editable.
 
 ### The one non-obvious decision
 
-A step stores a **semantic anchor**, not just a selector. The anchor — role, accessible name, nearby text, structural depth — is captured at learn time and is what survives a redesign.
+A step stores a **semantic anchor**, not just a selector. Four independent layers, captured at
+compile time, so that no single change to the page destroys all of them at once:
+
+| Layer | Field | Survives |
+|---|---|---|
+| Semantic | `role`, `name`, `nameNormalized` | restyling, id churn, class churn |
+| Attribute | `attrs.testId`, `attrs.name`, `attrs.type` | relabelling, i18n |
+| Contextual | `nearText`, `landmarks` | relabelling *and* id churn together |
+| Structural | `siblingOrdinal`, `siblingRole` | full relabelling, icon-only redesigns |
+
+`textFingerprint` is a normalized token set used to score candidates when several plausibly match.
+
+The layering is the point. A rename kills `name` but not `attrs` or `siblingOrdinal`. A redesign
+kills structure but not `role` + `nearText`. Healing is asked to reconcile four weak signals
+rather than trust one strong one.
 
 This is what turns healing from *"re-run the agent and hope"* into a narrow, single-shot, verifiable question: *given this anchor, which element on the current page is it?* Narrow questions are cheap questions. The entire cost model of the project rests on this field.
 
@@ -92,7 +130,13 @@ This is what turns healing from *"re-run the agent and hope"* into a narrow, sin
 
 `goto` · `click` · `fill` · `select` · `waitFor` · `extract` · `assert`
 
-Deliberately small. Anything not expressible in these seven is a signal the flow should be split, not that the vocabulary should grow.
+**Every step that can be healed must carry a `postcondition`.** Schema-enforced, not a
+convention: the compiler refuses to emit a healable step without one, because a heal with
+nothing to verify against is a guess that reports itself as a success. Where the compiler
+cannot infer a postcondition, it emits a DOM-delta assertion (the step must change *something*
+observable) rather than nothing.
+
+Otherwise deliberately small. Anything not expressible in these seven is a signal the flow should be split, not that the vocabulary should grow.
 
 ## 5. Healing
 
@@ -104,9 +148,25 @@ On step failure (selector miss, timeout, or failed postcondition):
 4. Retry the step.
 5. **Verify the postcondition.** A heal that isn't verified is a guess.
 6. On success: patch the spec, bump `version`, push the old selector to `history` with a timestamp and the replay URL of the run where it broke.
-7. On a second failure: escalate to full agent mode for the remainder of the flow, then recompile.
+7. On a second failure: **stop, report, exit non-zero.** Do not escalate.
 
-Healing is verified, never trusted. `--no-heal` exists so CI detects drift instead of silently absorbing it — that is what `drift` uses.
+### Two rules that bound the cost of failure
+
+**Healing is strictly local.** One step, one call, one retry. It never re-runs the compiler over
+the whole flow, and it never touches a step that did not fail. The blast radius of a repair is
+exactly one `steps[i].target`.
+
+**Escalation is opt-in.** A second failure exits with a report, not with a full agent run.
+`--escalate` enables recompilation of the remainder, and even then it is bounded by
+`UNDERSTUDY_MAX_SPEND_USD`.
+
+The reasoning is that a failure is the *worst* moment to start spending without a ceiling:
+you know the least about what is happening, and the cost is unbounded exactly when the
+situation is least understood. Silent recovery that costs a dollar is worse than a loud stop
+that costs nothing — the loud stop is information, and it is what `drift` is built on.
+
+Healing is verified, never trusted. `--no-heal` makes the runtime detect drift instead of
+absorbing it — that is what `drift` uses, and why `drift` can never spend money.
 
 ## 6. Backends
 
@@ -180,11 +240,94 @@ Served from a Solari sandbox preview URL when a key exists; plain `node:http` ot
 
 Deterministic and self-hosted, so you can shoot the video twice and there is no third party's ToS involved.
 
-## 11. Evidence
+## 11. The benchmark — this is the deliverable
 
-Every command prints wall time, LLM calls, tokens, and dollars. `benchmarks.json` is written by real runs and committed.
+Everything else in this document exists to make this table possible. It is the artifact that
+proves the thesis, and it is what the README opens with. `understudy bench` writes
+`benchmarks.json`; it is committed and regenerated by real runs.
 
-The README's headline numbers must be measured, not claimed. If the speedup is 6× rather than 10×, the README says 6×.
+### Per-run telemetry
+
+Every command emits: replay latency (p50/p95), heal latency, LLM calls, input/output tokens,
+dollars, and pass/fail. Written to `benchmarks.json`, printed as one line to stderr.
+Replay latency and heal latency are reported **separately** — averaging them together would
+hide the entire point.
+
+### B1 — The thesis run
+
+100 consecutive runs of `invoice-export` against demo-site v1.
+
+**Asserted, not observed:** `llmCalls === 0` and `costUsd === 0` across all 100. The test fails
+the build otherwise. This is cheap to assert because it is structurally guaranteed (§3), and
+asserting it anyway is what turns a design claim into a test.
+
+Cost: **$0.00** — local Chromium against a site we host.
+
+### B2 — The drift corpus
+
+The interesting half, and the one that can embarrass us.
+
+Ten mutation classes, each a committed variant of the demo site, each run 5 times:
+
+| # | Class | What changes |
+|---|---|---|
+| 1 | `id-rename` | `#export-btn` → `#btn-export` |
+| 2 | `class-churn` | utility classes regenerated wholesale |
+| 3 | `label-change` | "Export CSV" → "Download report" |
+| 4 | `i18n` | all labels translated to French |
+| 5 | `reparent` | button moved inside a dropdown menu |
+| 6 | `reorder` | siblings reordered |
+| 7 | `role-change` | `<button>` → `<a role="button">` |
+| 8 | `icon-only` | text replaced by an icon plus `aria-label` |
+| 9 | `shadow-dom` | component wrapped in a shadow root |
+| 10 | `ambiguous` | a second, near-identical button added as a decoy |
+
+Reported per class: heal success rate, LLM calls, tokens, latency, cost.
+
+Class 10 is expected to fail, or to heal to the wrong element. **Publishing that is the point.**
+A table where every class scores 100% reads as a table that was not really run. The failure
+rows are what make the passing rows believable, and knowing *which* drift classes defeat the
+anchor is the most useful thing this project can tell anyone.
+
+Cost: 10 × 5 = 50 Haiku calls ≈ **$0.03**.
+
+### B3 — The recovery
+
+100 more runs immediately after a heal. Asserted: back to `llmCalls === 0`.
+
+This closes the loop. Without B3 the story is "it recovers"; with B3 the story is
+**"it recovers and then stops costing anything again,"** which is the actual claim.
+
+### The headline
+
+```
+100 runs     0 LLM calls    $0.0000    p50 3.9s
+site change  1 LLM call     $0.0004    +1.2s
+100 runs     0 LLM calls    $0.0000    p50 3.9s
+
+heal success  43/50 across 10 mutation classes
+              fails: ambiguous (0/5), shadow-dom (3/5)
+```
+
+If the numbers come out worse than that, the README prints the worse numbers. A benchmark you
+would not publish when it disappoints you is not a benchmark.
+
+### Drift as a CI feature
+
+`understudy drift` is the same runtime with the healer set to `null`, so it **cannot** spend
+money — not "is configured not to," cannot. It exits non-zero on breakage and writes a
+machine-readable report.
+
+Shipped with a GitHub Action that runs it on a schedule: free breakage detection for every
+flow, on a cron, with no LLM spend. Repair stays a deliberate act — a human runs `understudy
+run --heal` and reviews the resulting diff.
+
+### Auditability
+
+`understudy diff <name>` prints selector-level history: every automatic repair, what changed,
+which run triggered it, the model and cost, and the postcondition that verified it. Each
+repair bumps `version` and appends to `history`; because flows are committed JSON, a repair
+also shows up as a reviewable line in `git diff`. No repair is invisible.
 
 ## 12. Testing
 
@@ -217,7 +360,16 @@ Lives as a top-level directory in the fork. `examples/` stays untouched.
 ## 14. Shipping
 
 1. `understudy/` in the public fork, with a README that leads with the measured numbers.
-2. Upstream PR to `solari-sdk/solari-cookbook`: `examples/browser-self-healing-selector-ts`, ~70 lines in the cookbook's house style — one selector, break it, heal it.
+2. Upstream PR to `solari-sdk/solari-cookbook`: `examples/browser-self-healing-selector-ts`.
+
+   Deliberately tiny — the cookbook's stated rule is "one idea each, no framework, no
+   scaffolding to read past," and this example obeys it rather than advertising Understudy.
+   Four beats, ~70 lines: **broken selector → Haiku call → repaired selector → postcondition
+   verifies it.** No spec format, no CLI, no compiler vocabulary. Anyone should be able to lift
+   it into their own Playwright script in five minutes.
+
+   Per the cookbook's contributing note, the surprising part gets a comment where it bites:
+   healing without a postcondition is a guess that reports success.
 3. Possible second upstream issue/PR: the cookbook's `sandbox-quickstart-ts` imports `@solarisdk/sdk` while the docs say `@solarisdk/sandbox`, and both the browser and sandbox packages export a class named `Solari` — a collision that bites anyone importing both in one file, as Understudy does.
 
 ## 15. Budget
