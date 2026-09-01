@@ -35,6 +35,14 @@ type RawNode = Omit<SnapshotNode, "nameNormalized" | "textFingerprint">
  * document.
  */
 export async function observe(page: Page): Promise<Snapshot> {
+  // esbuild (via tsx) rewrites nested functions to call a `__name` helper it
+  // injects at module scope. page.evaluate serializes the callback and runs it
+  // in the browser, where that helper does not exist -- so every call throws
+  // `__name is not defined`. Vitest's transform does not do this, which is why
+  // the suite stayed green while the tsx entry point was broken. Shim it with a
+  // raw string, which is never transformed.
+  await page.evaluate("globalThis.__name = globalThis.__name || ((f) => f)")
+
   const nodes: RawNode[] = await page.evaluate((maxNodes) => {
     const INTERACTIVE =
       "a[href],button,input,select,textarea,summary,[role=button],[role=link],[role=tab],[role=menuitem]"
