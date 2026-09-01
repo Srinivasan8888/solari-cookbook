@@ -12,6 +12,7 @@
     "mutations": "tsx demo-site/mutations.ts"
   },
   "dependencies": {
+    "@solarisdk/browser": "^0.1.2",
     "playwright": "^1.56.0",
     "zod": "^3.24.1"
   },

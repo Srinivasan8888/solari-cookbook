@@ -7,7 +7,8 @@
  * run prints telemetry to stderr and flow output as JSON to stdout, so it
  * pipes. Exit code is non-zero when a flow fails, so cron and CI can see it.
  */
-import { existsSync } from "node:fs"
+import { createServer } from "node:http"
+import { existsSync, readdirSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { formatTelemetry } from "./cost.js"
 import { learn } from "./learn.js"
@@ -16,6 +17,7 @@ import { llmHealer } from "./heal.js"
 import { cassetteClient, type CassetteMode } from "./cassette.js"
 import { openRouterClient, type LlmClient } from "./llm.js"
 import { localBackend } from "./backends/local.js"
+import { solariBackend } from "./backends/solari.js"
 import { isHealable, loadFlow, saveFlow } from "./spec.js"
 import type { Backend, Healer } from "./backends/types.js"
 
@@ -91,8 +93,15 @@ function llmClient(): LlmClient {
 }
 
 function backendFor(name: unknown): Backend {
-  if (name === "solari") throw new Error("the solari backend arrives in Plan 3")
-  return localBackend()
+  if (name !== "solari") return localBackend()
+  const apiKey = process.env.SOLARI_API_KEY
+  if (!apiKey) throw new Error("SOLARI_API_KEY is not set. Get one at console.getsolari.com.")
+  return solariBackend({
+    apiKey,
+    stealth: process.env.SOLARI_STEALTH === "1",
+    ...(process.env.SOLARI_PROXY ? { proxy: process.env.SOLARI_PROXY } : {}),
+    recording: process.env.SOLARI_RECORDING !== "0",
+  })
 }
 
 function flowPath(name: string): string {
@@ -185,6 +194,111 @@ function cmdDiff(args: Args): number {
   return 0
 }
 
+/**
+ * Every flow, healing off. The healer is null, so this command cannot make an
+ * LLM call -- not "is configured not to", cannot. Exits non-zero on breakage,
+ * which is what makes it usable as a cron or CI check with no spend risk.
+ */
+async function cmdDrift(args: Args): Promise<number> {
+  const names = readdirSync(FLOWS)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => f.replace(/\.json$/, ""))
+  if (names.length === 0) {
+    console.error("no flows in flows/")
+    return 0
+  }
+
+  const report: Record<string, unknown>[] = []
+  let broken = 0
+  for (const name of names) {
+    const flow = loadFlow(flowPath(name))
+    const result = await runFlow(flow, args.inputs, {
+      backend: backendFor(args.flags.backend ?? flow.backend),
+      healer: null,
+    })
+    if (result.status !== "ok") broken++
+    report.push({
+      flow: name,
+      status: result.status,
+      replayMs: result.telemetry.replayMs,
+      ...(result.failure ? { failedAt: result.failure.stepId, reason: result.failure.reason } : {}),
+    })
+    console.error(
+      `${result.status === "ok" ? "ok    " : "DRIFT "} ${name}` +
+        (result.failure ? `  ${result.failure.stepId}: ${result.failure.reason}` : ""),
+    )
+  }
+
+  console.log(JSON.stringify(report, null, 2))
+  console.error(`${names.length - broken}/${names.length} flows healthy, 0 LLM calls, $0.0000`)
+  return broken === 0 ? 0 : 1
+}
+
+/**
+ * A learned flow, exposed as an HTTP endpoint. This is the "web to API" claim
+ * made literal: POST typed JSON in, get typed JSON out, with no model in the
+ * request path unless the caller opts into healing.
+ */
+async function cmdServe(args: Args): Promise<number> {
+  const port = Number(args.flags.port ?? 8080)
+  const wantHeal = args.flags.heal === true
+
+  const server = createServer((req, res) => {
+    const send = (code: number, body: unknown) => {
+      res.writeHead(code, { "content-type": "application/json" })
+      res.end(JSON.stringify(body, null, 2))
+    }
+    const match = /^\/flows\/([A-Za-z0-9_-]+)$/.exec((req.url ?? "").split("?")[0] ?? "")
+    if (req.method !== "POST" || !match) {
+      send(404, { error: "POST /flows/:name" })
+      return
+    }
+    const name = match[1]!
+    if (!existsSync(flowPath(name))) {
+      send(404, { error: `no such flow: ${name}` })
+      return
+    }
+
+    const chunks: Buffer[] = []
+    req.on("data", (c: Buffer) => chunks.push(c))
+    req.on("end", () => {
+      void (async () => {
+        let inputs: Record<string, string> = {}
+        try {
+          const raw = Buffer.concat(chunks).toString("utf8")
+          if (raw.trim()) inputs = JSON.parse(raw) as Record<string, string>
+        } catch {
+          send(400, { error: "body must be JSON" })
+          return
+        }
+        try {
+          const flow = loadFlow(flowPath(name))
+          const result = await runFlow(flow, inputs, {
+            backend: backendFor(args.flags.backend ?? flow.backend),
+            healer: wantHeal ? llmHealer(llmClient()) : null,
+          })
+          if (result.repaired) saveFlow(flowPath(name), result.repaired)
+          send(result.status === "ok" ? 200 : 502, {
+            status: result.status,
+            output: result.output,
+            telemetry: result.telemetry,
+            ...(result.failure ? { failure: result.failure } : {}),
+          })
+        } catch (err) {
+          send(500, { error: (err as Error).message })
+        }
+      })()
+    })
+  })
+
+  await new Promise<void>((resolve) => server.listen(port, resolve))
+  console.error(`understudy serving on http://127.0.0.1:${port}`)
+  console.error(`  curl -XPOST localhost:${port}/flows/invoice-export -d '{"month":"2026-08"}'`)
+  console.error(wantHeal ? "  healing: ON (requests may cost money)" : "  healing: off (zero LLM calls)")
+  await new Promise(() => {}) // serve until killed
+  return 0
+}
+
 async function main(): Promise<number> {
   loadEnv()
   const [, , command, ...rest] = process.argv
@@ -193,8 +307,10 @@ async function main(): Promise<number> {
     case "learn": return cmdLearn(args)
     case "run": return cmdRun(args)
     case "diff": return cmdDiff(args)
+    case "drift": return cmdDrift(args)
+    case "serve": return cmdServe(args)
     default:
-      console.error("usage: understudy <learn|run|diff> ...")
+      console.error("usage: understudy <learn|run|drift|diff|serve> ...")
       return 2
   }
 }

@@ -245,6 +245,7 @@ export async function runFlow(
               tier: fix.tier,
               costUsd: fix.costUsd,
               replayUrl: await session.replayUrl(),
+              sessionId: session.sessionId,
             })
           }
         }

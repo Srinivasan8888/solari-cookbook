@@ -4,6 +4,8 @@ import type { Snapshot } from "../observe.js"
 
 export interface BackendSession {
   page: Page
+  /** Backend session id, or null for backends that have no such concept. */
+  sessionId: string | null
   /** Solari returns a shareable replay link; local has none. */
   replayUrl(): Promise<string | null>
   close(): Promise<void>

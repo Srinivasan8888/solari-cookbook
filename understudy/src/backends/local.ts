@@ -10,6 +10,7 @@ export function localBackend(opts: { headless?: boolean } = {}): Backend {
       const page = await context.newPage()
       return {
         page,
+        sessionId: null,
         async replayUrl() {
           return null
         },

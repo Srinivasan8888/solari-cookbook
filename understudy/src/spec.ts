@@ -24,6 +24,10 @@ export const HistoryEntrySchema = z.object({
   tier: z.enum(["fallback", "anchor", "llm"]),
   costUsd: z.number(),
   replayUrl: z.string().nullable(),
+  /** Backend session id. A Solari replay URL is presigned and only exists
+   *  after the session is released, so the id is what can honestly be
+   *  recorded mid-run; `understudy replay` resolves it later. */
+  sessionId: z.string().nullable().default(null),
 })
 export type HistoryEntry = z.infer<typeof HistoryEntrySchema>
 

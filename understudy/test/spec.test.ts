@@ -84,6 +84,7 @@ describe("recordRepair", () => {
       tier: "anchor",
       costUsd: 0,
       replayUrl: null,
+      sessionId: null,
     })
 
     expect(next.version).toBe(2)
