@@ -152,8 +152,13 @@ typed.
 - **Ambiguous duplicates defeat it.** Also measured above.
 - **It does not improvise at run time.** It executes learned flows. That is the
   entire point.
-- **The Solari backend is written against the published SDK types but has not
-  been run against a live account.** Said plainly rather than implied.
+- **The Solari backend has not been run against a live account.** What *is*
+  verified: Solari connects Playwright to a remote browser over its wire
+  protocol, and `test/remote-browser.test.ts` reproduces that exact topology
+  with `launchServer()` + `connect()` — so in-page evaluate, the snapshot, the
+  full flow and close-ordering are all exercised against a browser this code
+  did not launch. What remains unverified is session auth, profiles, proxy
+  egress and replay retrieval. Said plainly rather than implied.
 
 ## Cost
 

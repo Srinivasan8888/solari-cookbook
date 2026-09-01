@@ -73,10 +73,22 @@ export function solariBackend(opts: SolariBackendOptions): Backend {
           if (recording) {
             try {
               await client.sessions.releaseAndWait(sessionId)
-              const { url } = await client.sessions.getReplayUrl(sessionId)
-              console.error(`replay: ${url}`)
+              // The replay upload is asynchronous AFTER release -- their docs
+              // say "available ~1-3s after releaseAndWait" -- so the first
+              // call usually 404s even on a perfectly good recording. Retry
+              // before concluding there is no replay.
+              for (let attempt = 0; attempt < 5; attempt++) {
+                try {
+                  const { url } = await client.sessions.getReplayUrl(sessionId)
+                  console.error(`replay: ${url}`)
+                  break
+                } catch {
+                  await new Promise((r) => setTimeout(r, 1500))
+                }
+              }
             } catch {
-              // The upload is async after release; a miss here is not fatal.
+              // Release itself failed; nothing to fetch. Not fatal to the run,
+              // whose result the caller already has.
             }
           }
           // REQUIRED. The client keeps a loopback proxy open for the
