@@ -1,0 +1,38 @@
+{
+  "2d19ea33f8c87ff07c151bfc8ea3ffe3": {
+    "value": {
+      "confidence": 0.95,
+      "idx": 4
+    },
+    "model": "dots-studio/dots-3-note-preview:free",
+    "inputTokens": 701,
+    "outputTokens": 603,
+    "costUsd": 0,
+    "ms": 7357,
+    "prompt": "The step targeted this element:\n{\n  \"role\": \"button\",\n  \"name\": \"Load invoices\",\n  \"nameNormalized\": \"load invoices\",\n  \"attrs\": {\n    \"testId\": null,\n    \"name\": \"load\",\n    \"type\": \"button\"\n  },\n  \""
+  },
+  "033b54c0ea74c401e78671a13728cea8": {
+    "value": {
+      "confidence": 1,
+      "idx": 4
+    },
+    "model": "dots-studio/dots-3-note-preview:free",
+    "inputTokens": 710,
+    "outputTokens": 422,
+    "costUsd": 0,
+    "ms": 4692,
+    "prompt": "The step targeted this element:\n{\n  \"role\": \"button\",\n  \"name\": \"Load invoices\",\n  \"nameNormalized\": \"load invoices\",\n  \"attrs\": {\n    \"testId\": null,\n    \"name\": \"load\",\n    \"type\": \"button\"\n  },\n  \""
+  },
+  "b89f78e370d7a31f260912a704cd046b": {
+    "value": {
+      "confidence": 0.95,
+      "idx": 4
+    },
+    "model": "dots-studio/dots-3-note-preview:free",
+    "inputTokens": 698,
+    "outputTokens": 453,
+    "costUsd": 0,
+    "ms": 6245,
+    "prompt": "The step targeted this element:\n{\n  \"role\": \"button\",\n  \"name\": \"Load invoices\",\n  \"nameNormalized\": \"load invoices\",\n  \"attrs\": {\n    \"testId\": null,\n    \"name\": \"load\",\n    \"type\": \"button\"\n  },\n  \""
+  }
+}

@@ -77,7 +77,13 @@ export function llmHealer(llm: LlmClient): Healer {
       const picked = snapshot.nodes.find((n) => n.idx === idx)
       if (!picked) return null
 
-      return { selector: picked.selector, costUsd: res.costUsd }
+      return {
+        selector: picked.selector,
+        costUsd: res.costUsd,
+        inputTokens: res.inputTokens,
+        outputTokens: res.outputTokens,
+        ms: res.ms,
+      }
     },
   }
 }

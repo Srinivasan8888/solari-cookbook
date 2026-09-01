@@ -17,13 +17,20 @@ export interface Backend {
 /**
  * The paid repair tier. Declared here so runtime.ts can depend on the
  * interface without importing anything that can reach the network.
- * Implemented in Plan 2. Latency is measured by the runtime, not
- * self-reported.
+ * Implemented in Plan 2.
  */
 export interface Healer {
   heal(input: {
     anchor: Anchor
     snapshot: Snapshot
     failedSelector: string
-  }): Promise<{ selector: string; costUsd: number } | null>
+  }): Promise<{
+    selector: string
+    costUsd: number
+    inputTokens: number
+    outputTokens: number
+    /** Wall time of the live call, preserved through cassettes so a replayed
+     *  benchmark reports real seconds rather than file-read speed. */
+    ms: number
+  } | null>
 }

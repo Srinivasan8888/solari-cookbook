@@ -153,11 +153,16 @@ async function repair(
     snapshot,
     failedSelector: target.primary,
   })
-  telemetry.healMs += Date.now() - started
+  // Prefer the healer's own reported latency: under a cassette the wall clock
+  // measures reading a file, and a benchmark that reported 2ms for a call that
+  // really took 6s would be worse than no benchmark.
+  telemetry.healMs += healed?.ms ?? Date.now() - started
   if (!healed) return null
 
   telemetry.llmCalls += 1
   telemetry.costUsd += healed.costUsd
+  telemetry.inputTokens += healed.inputTokens
+  telemetry.outputTokens += healed.outputTokens
   // This repair's own cost, not the run's running total.
   return { selector: healed.selector, tier: "llm", costUsd: healed.costUsd }
 }

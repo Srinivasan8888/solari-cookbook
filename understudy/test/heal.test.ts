@@ -26,7 +26,7 @@ const snapshot: Snapshot = {
 
 const stub = (value: unknown): LlmClient => ({
   async complete() {
-    return { value, model: "stub", inputTokens: 674, outputTokens: 531, costUsd: 0 } as never
+    return { value, model: "stub", inputTokens: 674, outputTokens: 531, costUsd: 0, ms: 6500 } as never
   },
 })
 

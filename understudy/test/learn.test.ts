@@ -18,7 +18,7 @@ function scripted(pick: (els: El[], turn: number) => object): LlmClient {
   return {
     async complete() {
       const value = pick(lastElements, turn++)
-      return { value, model: "scripted", inputTokens: 0, outputTokens: 0, costUsd: 0 } as never
+      return { value, model: "scripted", inputTokens: 0, outputTokens: 0, costUsd: 0, ms: 0 } as never
     },
   }
 }

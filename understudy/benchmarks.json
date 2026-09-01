@@ -1,0 +1,180 @@
+{
+  "generatedAt": "2026-09-01T10:44:40.771Z",
+  "models": [
+    "dots-studio/dots-3-note-preview:free",
+    "z-ai/glm-5.2:free",
+    "nvidia/nemotron-3-super-120b-a12b:free"
+  ],
+  "b1": {
+    "runs": 100,
+    "llmCalls": 0,
+    "costUsd": 0,
+    "failures": 0,
+    "p50Ms": 72,
+    "p95Ms": 81
+  },
+  "b2": {
+    "trialsPerClass": 5,
+    "healed": 45,
+    "trials": 50,
+    "costUsd": 0,
+    "classes": [
+      {
+        "name": "id-rename",
+        "what": "id renamed",
+        "expected": "fallback",
+        "healed": 5,
+        "trials": 5,
+        "tiers": {
+          "fallback": 5
+        },
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "costUsd": 0,
+        "healP50Ms": 0
+      },
+      {
+        "name": "class-churn",
+        "what": "id removed, generated classes",
+        "expected": "fallback",
+        "healed": 5,
+        "trials": 5,
+        "tiers": {
+          "fallback": 5
+        },
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "costUsd": 0,
+        "healP50Ms": 0
+      },
+      {
+        "name": "label-change",
+        "what": "id + name changed, new text",
+        "expected": "llm",
+        "healed": 5,
+        "trials": 5,
+        "tiers": {
+          "llm": 5
+        },
+        "llmCalls": 5,
+        "inputTokens": 3505,
+        "outputTokens": 3015,
+        "costUsd": 0,
+        "healP50Ms": 7357
+      },
+      {
+        "name": "i18n",
+        "what": "id + name changed, French text",
+        "expected": "llm",
+        "healed": 5,
+        "trials": 5,
+        "tiers": {
+          "llm": 5
+        },
+        "llmCalls": 5,
+        "inputTokens": 3550,
+        "outputTokens": 2110,
+        "costUsd": 0,
+        "healP50Ms": 4692
+      },
+      {
+        "name": "reparent",
+        "what": "id + name changed, moved into a dropdown",
+        "expected": "llm",
+        "healed": 5,
+        "trials": 5,
+        "tiers": {
+          "fallback": 5
+        },
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "costUsd": 0,
+        "healP50Ms": 0
+      },
+      {
+        "name": "reorder",
+        "what": "id + name changed, siblings swapped",
+        "expected": "anchor",
+        "healed": 5,
+        "trials": 5,
+        "tiers": {
+          "fallback": 5
+        },
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "costUsd": 0,
+        "healP50Ms": 0
+      },
+      {
+        "name": "role-change",
+        "what": "id + name changed, button becomes an anchor",
+        "expected": "llm",
+        "healed": 5,
+        "trials": 5,
+        "tiers": {
+          "fallback": 5
+        },
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "costUsd": 0,
+        "healP50Ms": 0
+      },
+      {
+        "name": "icon-only",
+        "what": "id + name changed, text replaced by an icon",
+        "expected": "llm",
+        "healed": 5,
+        "trials": 5,
+        "tiers": {
+          "llm": 5
+        },
+        "llmCalls": 5,
+        "inputTokens": 3490,
+        "outputTokens": 2265,
+        "costUsd": 0,
+        "healP50Ms": 6245
+      },
+      {
+        "name": "shadow-dom",
+        "what": "controls wrapped in a shadow root",
+        "expected": "fail",
+        "healed": 5,
+        "trials": 5,
+        "tiers": {
+          "fallback": 5
+        },
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "costUsd": 0,
+        "healP50Ms": 0
+      },
+      {
+        "name": "ambiguous",
+        "what": "id + name changed, near-identical decoy added",
+        "expected": "fail",
+        "healed": 0,
+        "trials": 5,
+        "tiers": {},
+        "llmCalls": 0,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "costUsd": 0,
+        "healP50Ms": 0
+      }
+    ]
+  },
+  "b3": {
+    "runs": 100,
+    "llmCalls": 0,
+    "costUsd": 0,
+    "failures": 0,
+    "p50Ms": 71,
+    "p95Ms": 85
+  }
+}

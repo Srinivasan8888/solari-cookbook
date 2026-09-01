@@ -10,7 +10,7 @@ const inner = (value: unknown) => {
     calls: 0,
     async complete() {
       c.calls++
-      return { value, model: "m", inputTokens: 1, outputTokens: 1, costUsd: 0 }
+      return { value, model: "m", inputTokens: 1, outputTokens: 1, costUsd: 0, ms: 0 }
     },
   }
   return c as unknown as LlmClient & { calls: number }

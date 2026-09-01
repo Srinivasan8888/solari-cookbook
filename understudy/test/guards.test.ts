@@ -16,7 +16,7 @@ const expensive: LlmClient = {
   async complete() {
     return {
       value: { done: false, reasoning: "again", action: "click", idx: 0, value: "", inputName: "", as: "" },
-      model: "pricey", inputTokens: 100, outputTokens: 100, costUsd: 1.0,
+      model: "pricey", inputTokens: 100, outputTokens: 100, costUsd: 1.0, ms: 0,
     } as never
   },
 }
@@ -38,7 +38,7 @@ describe("guards", () => {
     // verification the run would report success having clicked the wrong thing.
     const liar: Healer = {
       async heal() {
-        return { selector: "#settings-tab", costUsd: 0 }
+        return { selector: "#settings-tab", costUsd: 0, inputTokens: 0, outputTokens: 0, ms: 0 }
       },
     }
     const spec = FlowSpecSchema.parse({

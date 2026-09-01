@@ -26,8 +26,8 @@
     <label for="month">Billing month</label>
     <input id="month" name="month" type="text" placeholder="YYYY-MM" value="">
     <p>
-      <button id="btn-load" name="load" type="button">Load invoices</button>
-      <button id="btn-export" name="export" type="submit">Export CSV</button>
+      <button id="btn-load" name="load" data-role="load" type="button">Load invoices</button>
+      <button id="btn-export" name="export" data-role="export" type="submit">Export CSV</button>
     </p>
     <table id="results" hidden>
       <thead><tr><th>Invoice</th><th>Amount</th></tr></thead>
@@ -44,7 +44,7 @@
     { id: `INV-${month}-003`, amount: "$3,015.25" },
   ]
 
-  document.getElementById("btn-load").addEventListener("click", () => {
+  document.querySelector('[data-role="load"]').addEventListener("click", () => {
     const month = document.getElementById("month").value.trim()
     if (!month) { document.getElementById("status").textContent = "Enter a month first."; return }
     const body = document.getElementById("rows")
@@ -58,7 +58,7 @@
     document.getElementById("status").textContent = `${rowsFor(month).length} results`
   })
 
-  document.getElementById("btn-export").addEventListener("click", () => {
+  document.querySelector('[data-role="export"]').addEventListener("click", () => {
     if (document.getElementById("results").hidden) {
       document.getElementById("status").textContent = "Load invoices before exporting."
       return

@@ -24,6 +24,10 @@ export type LlmResponse<T> = {
   inputTokens: number
   outputTokens: number
   costUsd: number
+  /** Wall time of the live call. Preserved through cassettes so a replayed
+   *  benchmark reports what the call actually cost in seconds, not what it
+   *  costs to read a file. */
+  ms: number
 }
 
 export interface LlmClient {
@@ -54,6 +58,7 @@ export function openRouterClient(opts: OpenRouterOptions): LlmClient {
   return {
     async complete<T>(req: LlmRequest): Promise<LlmResponse<T>> {
       const failures: string[] = []
+      const startedAll = Date.now()
 
       for (const model of opts.models) {
         try {
@@ -115,6 +120,7 @@ export function openRouterClient(opts: OpenRouterOptions): LlmClient {
             inputTokens: body.usage?.prompt_tokens ?? 0,
             outputTokens: body.usage?.completion_tokens ?? 0,
             costUsd: priceOf(answered),
+            ms: Date.now() - startedAll,
           }
         } catch (err) {
           failures.push(`${model}: ${(err as Error).message}`)
