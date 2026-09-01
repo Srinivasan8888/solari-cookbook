@@ -146,10 +146,34 @@ export async function observe(page: Page): Promise<Snapshot> {
       return Array.from(new Set(out)).slice(0, 5)
     }
 
-    const els = Array.from(document.querySelectorAll(INTERACTIVE)).filter((el) => {
+    const visible = (el: Element): boolean => {
       const r = el.getBoundingClientRect()
       return r.width > 0 && r.height > 0
-    })
+    }
+
+    // Text the element owns directly, not text inherited from descendants.
+    // Without this a wrapper <div> would claim the whole page as its content.
+    const ownText = (el: Element): string =>
+      Array.from(el.childNodes)
+        .filter((n) => n.nodeType === 3)
+        .map((n) => n.textContent ?? "")
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim()
+
+    const interactive = Array.from(document.querySelectorAll(INTERACTIVE)).filter(visible)
+    const claimed = new Set(interactive)
+
+    // Content nodes: where extracted data actually lives. Interactive elements
+    // alone cannot express "read the result", which is the point of a flow
+    // that returns something. Kept narrow -- addressable or tabular, with its
+    // own short text -- so the snapshot stays cheap.
+    const CONTENT = "[id], td, th, [role=status], [aria-live]"
+    const content = Array.from(document.querySelectorAll(CONTENT)).filter(
+      (el) => !claimed.has(el) && visible(el) && ownText(el).length > 0 && ownText(el).length <= 200,
+    )
+
+    const els = [...interactive, ...content]
 
     return els.slice(0, maxNodes).map((el, idx) => {
       const role = roleOf(el)
@@ -160,10 +184,11 @@ export async function observe(page: Page): Promise<Snapshot> {
             (c: Element) => roleOf(c) === role,
           ) as Element[])
         : [el]
+      const isInteractive = claimed.has(el)
       return {
         idx,
         role,
-        name: nameOf(el),
+        name: isInteractive ? nameOf(el) : ownText(el).slice(0, 80),
         attrs: {
           testId: el.getAttribute("data-testid"),
           name: el.getAttribute("name"),
