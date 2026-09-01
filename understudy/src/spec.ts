@@ -89,3 +89,42 @@ export type FlowSpec = z.infer<typeof FlowSpecSchema>
 export function isHealable(step: Step): step is Extract<Step, { target: Target }> {
   return step.action !== "goto" && step.action !== "assert"
 }
+
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
+import { dirname } from "node:path"
+
+export function loadFlow(path: string): FlowSpec {
+  return FlowSpecSchema.parse(JSON.parse(readFileSync(path, "utf8")))
+}
+
+export function saveFlow(path: string, flow: FlowSpec): void {
+  mkdirSync(dirname(path), { recursive: true })
+  writeFileSync(path, JSON.stringify(flow, null, 2) + "\n", "utf8")
+}
+
+/**
+ * Apply a repair immutably. The old selector is demoted to a fallback rather
+ * than discarded: sites revert, and a demoted selector costs nothing to try.
+ */
+export function recordRepair(
+  flow: FlowSpec,
+  stepId: string,
+  entry: HistoryEntry,
+): FlowSpec {
+  const steps = flow.steps.map((step) => {
+    if (step.id !== stepId || !isHealable(step)) return step
+    const fallbacks = [entry.from, ...step.target.fallbacks].filter(
+      (s, i, all) => s !== entry.to && all.indexOf(s) === i,
+    )
+    return {
+      ...step,
+      target: {
+        ...step.target,
+        primary: entry.to,
+        fallbacks,
+        history: [...step.target.history, entry],
+      },
+    }
+  })
+  return { ...flow, version: flow.version + 1, steps }
+}
