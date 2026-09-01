@@ -1,0 +1,14 @@
+{
+  "2d19ea33f8c87ff07c151bfc8ea3ffe3": {
+    "value": {
+      "confidence": 0.9,
+      "idx": 4
+    },
+    "model": "dots-studio/dots-3-note-preview:free",
+    "inputTokens": 701,
+    "outputTokens": 853,
+    "costUsd": 0,
+    "ms": 9698,
+    "prompt": "The step targeted this element:\n{\n  \"role\": \"button\",\n  \"name\": \"Load invoices\",\n  \"nameNormalized\": \"load invoices\",\n  \"attrs\": {\n    \"testId\": null,\n    \"name\": \"load\",\n    \"type\": \"button\"\n  },\n  \""
+  }
+}

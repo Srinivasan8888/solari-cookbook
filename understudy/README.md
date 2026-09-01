@@ -92,6 +92,17 @@ A second failure **stops and reports**. Escalation to a full agent run is
 opt-in behind `--escalate`, because a failure is the worst moment to start
 spending without a ceiling.
 
+## Watch it
+
+```bash
+npm run demo             # ~45s, the whole arc
+npm run demo -- --headed # watch the browser drive itself
+```
+
+It works and costs nothing → the site ships a redesign → it fails loudly →
+one model call repairs the one step that broke, verified before acceptance →
+it costs nothing again.
+
 ## Quickstart
 
 ```bash

@@ -9,7 +9,8 @@
     "probe": "tsx scripts/probe-models.ts",
     "understudy": "tsx src/cli.ts",
     "bench": "tsx src/bench.ts",
-    "mutations": "tsx demo-site/mutations.ts"
+    "mutations": "tsx demo-site/mutations.ts",
+    "demo": "tsx src/demo.ts"
   },
   "dependencies": {
     "@solarisdk/browser": "^0.1.2",

@@ -179,6 +179,12 @@ export async function runFlow(
   let current = flow
   const session = await opts.backend.open({ profile: flow.profile })
   const startedAll = Date.now()
+  // Wall time actually spent repairing, which is NOT telemetry.healMs.
+  // healMs reports the model call's own latency and is preserved through
+  // cassettes, so under replay it is a recorded 9s while the wall clock is
+  // milliseconds. Subtracting one from the other produced negative replay
+  // times. Two different quantities; keep them apart.
+  let healWallMs = 0
 
   try {
     for (const step of current.steps) {
@@ -226,7 +232,9 @@ export async function runFlow(
       }
 
       if (!ok) {
+        const healStarted = Date.now()
         const fix = await repair(session.page, step.target, opts.healer, telemetry)
+        healWallMs += Date.now() - healStarted
         if (fix) {
           try {
             extracted = await actOn(session.page, step, fix.selector, inputs, timeoutMs)
@@ -260,7 +268,7 @@ export async function runFlow(
       })
 
       if (!ok) {
-        telemetry.replayMs = Date.now() - startedAll - telemetry.healMs
+        telemetry.replayMs = Date.now() - startedAll - healWallMs
         return {
           flow: current.name, version: current.version, status: "failed",
           telemetry, steps, output,
@@ -271,7 +279,7 @@ export async function runFlow(
       if (step.action === "extract" && extracted !== null) output[step.as] = extracted
     }
 
-    telemetry.replayMs = Date.now() - startedAll - telemetry.healMs
+    telemetry.replayMs = Date.now() - startedAll - healWallMs
     return {
       flow: current.name, version: current.version, status: "ok",
       telemetry, steps, output,
