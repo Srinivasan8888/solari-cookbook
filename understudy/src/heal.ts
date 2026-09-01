@@ -44,7 +44,12 @@ function describe(node: SnapshotNode) {
   }
 }
 
-export function llmHealer(llm: LlmClient): Healer {
+export function llmHealer(
+  llm: LlmClient,
+  /** Called with the provider's error when the chain is exhausted. Without
+   *  this a credentials failure looks identical to "no matching element". */
+  onError?: (err: Error) => void,
+): Healer {
   return {
     async heal({ anchor, snapshot }) {
       const prompt = [
@@ -64,10 +69,11 @@ export function llmHealer(llm: LlmClient): Healer {
           prompt,
           schema: SCHEMA,
         })
-      } catch {
+      } catch (err) {
         // The runtime's contract is that a failed heal fails the step loudly.
         // Propagating here would abort the run before it can report which
-        // step broke and why.
+        // step broke and why -- but the reason must not be silently discarded.
+        onError?.(err as Error)
         return null
       }
 

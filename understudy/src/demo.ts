@@ -82,7 +82,20 @@ const backend = () => localBackend({ headless: !HEADED })
 // the timeout only where it looks bad would be cherry-picking.
 const STEP_TIMEOUT_MS = 1500
 
+function preflight(): void {
+  const cassette = process.env.UNDERSTUDY_CASSETTE ?? "replay"
+  if (cassette !== "off") return
+  if (process.env.OPENROUTER_API_KEY) return
+  console.log("")
+  console.log(red("  Cannot run live: OPENROUTER_API_KEY is not set in this shell."))
+  console.log(dim("    set -a; . ./.env; set +a        # load it, then re-run"))
+  console.log(dim("    npm run demo                    # or replay the recorded call instead"))
+  console.log("")
+  process.exit(2)
+}
+
 async function main() {
+  preflight()
   // Deliberately not console.clear(): on a screen recording the command the
   // viewer just watched you type is the proof that this is one command.
   console.log("")
@@ -121,28 +134,51 @@ async function main() {
     "dots-studio/dots-3-note-preview:free", "z-ai/glm-5.2:free",
   ] })
   const mode = (process.env.UNDERSTUDY_CASSETTE ?? "replay") as CassetteMode
+  let healError: Error | null = null
   const healed = await runFlow(rebase(flow, v2.url), { month: "2026-08" }, {
     backend: backend(), stepTimeoutMs: STEP_TIMEOUT_MS,
-    healer: llmHealer(cassetteClient(live, { mode, path: CASSETTE })),
+    healer: llmHealer(
+      cassetteClient(live, { mode, path: CASSETTE }),
+      (e) => { healError = e },
+    ),
   })
   const step = healed.steps.find((s) => s.status === "healed")
   console.log(line(healed))
-  console.log(cyan(`         ${step?.stepId}: #load-btn  ->  ${step?.selectorUsed}   (via ${step?.tier}, ${(healed.telemetry.healMs / 1000).toFixed(1)}s)`))
-  console.log(dim(`         ${healed.telemetry.inputTokens} in / ${healed.telemetry.outputTokens} out tokens, free-tier model`))
-  console.log(dim(`         postcondition verified before accepting it`))
+
+  // Narrate what actually happened. Printing "verified" under a failed run
+  // would be the software lying on screen.
+  if (healed.status === "ok" && step) {
+    console.log(cyan(`         ${step.stepId}: #load-btn  ->  ${step.selectorUsed}   (via ${step.tier}, ${(healed.telemetry.healMs / 1000).toFixed(1)}s)`))
+    console.log(dim(`         ${healed.telemetry.inputTokens} in / ${healed.telemetry.outputTokens} out tokens, free-tier model`))
+    console.log(dim(`         postcondition verified before accepting it`))
+  } else {
+    console.log(red(`         the repair did not happen -- this run is not a demo, it is a failure`))
+    if (healError) console.log(red(`         ${String((healError as Error).message).split("\n").slice(0, 3).join("\n         ")}`))
+    else console.log(dim(`         no candidate passed the confidence floor`))
+    await v2.close()
+    process.exitCode = 1
+    return
+  }
   await pause(2800)
 
   banner("5.", "And it costs nothing again.")
   await pause(600)
   const repaired = healed.repaired ?? flow
+  let ok5 = true
   for (let i = 0; i < 3; i++) {
     const r = await runFlow(rebase(repaired, v2.url), { month: "2026-08" }, { backend: backend(), healer: null, stepTimeoutMs: STEP_TIMEOUT_MS })
+    if (r.status !== "ok") ok5 = false
     console.log(line(r) + dim(`   -> ${JSON.stringify(r.output)}`))
     await pause(500)
   }
   await v2.close()
 
   console.log("")
+  if (!ok5) {
+    console.log(red("  The repaired flow did not stay green. Not a demo -- a failure."))
+    process.exitCode = 1
+    return
+  }
   console.log(dim("  ") + bold("100 runs  0 calls  $0.00") + dim("   ·   ") +
     bold("1 change  1 call") + dim("   ·   ") + bold("100 runs  0 calls  $0.00"))
   console.log(dim("  github.com/Srinivasan8888/solari-cookbook\n"))
