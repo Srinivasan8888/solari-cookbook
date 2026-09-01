@@ -83,7 +83,8 @@ const backend = () => localBackend({ headless: !HEADED })
 const STEP_TIMEOUT_MS = 1500
 
 async function main() {
-  console.clear()
+  // Deliberately not console.clear(): on a screen recording the command the
+  // viewer just watched you type is the proof that this is one command.
   console.log("")
   console.log(bold("  UNDERSTUDY") + dim("   the LLM is the compiler, not the runtime"))
 
