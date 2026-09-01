@@ -14,10 +14,10 @@ npm start
 ```
 
 ```
-learned  : {"role":"button","name":"Export CSV","nearText":["Invoices","Export CSV","ready"]}
+learned  : {"role":"button","name":"Export CSV","near":["Invoices","Export CSV","ready"]}
 broken   : #export-btn no longer matches
 repaired : #cta-dl
-verified : the repaired selector does the same thing
+verified : it does the same thing
 ```
 
 ## The part worth stealing
