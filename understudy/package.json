@@ -6,7 +6,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "demo-site": "tsx demo-site/serve.ts",
-    "probe": "tsx scripts/probe-models.ts"
+    "probe": "tsx scripts/probe-models.ts",
+    "understudy": "tsx src/cli.ts"
   },
   "dependencies": {
     "playwright": "^1.56.0",
