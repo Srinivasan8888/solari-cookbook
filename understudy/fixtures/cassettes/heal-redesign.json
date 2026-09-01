@@ -1,0 +1,13 @@
+{
+  "4727c0a5939500c13d1dea0120683639": {
+    "value": {
+      "confidence": 0.95,
+      "idx": 5
+    },
+    "model": "dots-studio/dots-3-note-preview:free",
+    "inputTokens": 1726,
+    "outputTokens": 548,
+    "costUsd": 0,
+    "prompt": "The step targeted this element:\n{\n  \"role\": \"button\",\n  \"name\": \"Export CSV\",\n  \"nameNormalized\": \"export csv\",\n  \"attrs\": {\n    \"testId\": null,\n    \"name\": \"export\",\n    \"type\": \"submit\"\n  },\n  \"near"
+  }
+}

@@ -1,0 +1,32 @@
+# Nightly drift detection.
+#
+# Runs every flow with healing disabled, so this job is structurally incapable
+# of making an LLM call: no API key is provided, and the runtime's healer is
+# null. It cannot cost money. It only tells you what the web broke overnight.
+#
+# Repair stays a deliberate act: a human runs `understudy run --heal` and
+# reviews the resulting selector diff.
+name: understudy drift
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: understudy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Serve the demo site
+        run: npx tsx demo-site/serve.ts v1 &
+      - name: Detect drift
+        run: npx tsx src/cli.ts drift --input month=2026-08

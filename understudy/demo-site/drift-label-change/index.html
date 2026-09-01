@@ -1,0 +1,68 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Acme Invoices</title>
+<style>
+  body { font: 15px system-ui, sans-serif; margin: 2rem; color: #16171a; }
+  nav { display: flex; gap: 1rem; border-bottom: 1px solid #d8dade; padding-bottom: .75rem; }
+  nav a { text-decoration: none; color: #55585f; padding: .25rem .5rem; }
+  nav a[aria-current="page"] { color: #16171a; font-weight: 600; }
+  main { max-width: 640px; margin-top: 1.5rem; }
+  label { display: block; margin: 1rem 0 .35rem; font-weight: 500; }
+  input, button { font: inherit; padding: .5rem .75rem; }
+  button { background: #16171a; color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+  table { border-collapse: collapse; margin-top: 1.25rem; width: 100%; }
+  th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #e8eaed; }
+</style>
+
+<nav>
+  <a href="#dashboard" id="dashboard-tab">Dashboard</a>
+  <a href="#invoices" id="invoices-tab" aria-current="page">Invoices</a>
+  <a href="#settings" id="settings-tab">Settings</a>
+</nav>
+
+<main>
+  <section id="invoices" aria-label="Invoices">
+    <h1>Invoices</h1>
+    <label for="month">Billing month</label>
+    <input id="month" name="month" type="text" placeholder="YYYY-MM" value="">
+    <p>
+      <button id="ldb-7f2a" name="fetch" data-role="load" type="button">Fetch statements</button>
+      <button id="export-btn" name="export" data-role="export" type="submit">Export CSV</button>
+    </p>
+    <table id="results" hidden>
+      <thead><tr><th>Invoice</th><th>Amount</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p id="status"></p>
+  </section>
+</main>
+
+<script>
+  const rowsFor = (month) => [
+    { id: `INV-${month}-001`, amount: "$1,240.00" },
+    { id: `INV-${month}-002`, amount: "$880.50" },
+    { id: `INV-${month}-003`, amount: "$3,015.25" },
+  ]
+
+  document.querySelector('[data-role="load"]').addEventListener("click", () => {
+    const month = document.getElementById("month").value.trim()
+    if (!month) { document.getElementById("status").textContent = "Enter a month first."; return }
+    const body = document.getElementById("rows")
+    body.replaceChildren(...rowsFor(month).map((r) => {
+      const tr = document.createElement("tr")
+      const a = document.createElement("td"); a.textContent = r.id
+      const b = document.createElement("td"); b.textContent = r.amount
+      tr.append(a, b); return tr
+    }))
+    document.getElementById("results").hidden = false
+    document.getElementById("status").textContent = `${rowsFor(month).length} results`
+  })
+
+  document.querySelector('[data-role="export"]').addEventListener("click", () => {
+    if (document.getElementById("results").hidden) {
+      document.getElementById("status").textContent = "Load invoices before exporting."
+      return
+    }
+    location.hash = "#/download/ready"
+  })
+</script>

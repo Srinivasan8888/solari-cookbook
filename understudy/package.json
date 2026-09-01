@@ -1,0 +1,25 @@
+{
+  "name": "understudy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo-site": "tsx demo-site/serve.ts",
+    "probe": "tsx scripts/probe-models.ts",
+    "understudy": "tsx src/cli.ts",
+    "bench": "tsx src/bench.ts",
+    "mutations": "tsx demo-site/mutations.ts"
+  },
+  "dependencies": {
+    "@solarisdk/browser": "^0.1.2",
+    "playwright": "^1.56.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11"
+  }
+}
