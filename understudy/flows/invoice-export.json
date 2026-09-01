@@ -1,0 +1,56 @@
+{
+  "name": "invoice-export",
+  "version": 1,
+  "url": "http://127.0.0.1:8787/",
+  "backend": "local",
+  "profile": null,
+  "inputs": { "month": { "type": "string", "required": true } },
+  "steps": [
+    { "id": "s0", "action": "goto", "url": "http://127.0.0.1:8787/" },
+    {
+      "id": "s1", "action": "fill", "value": "{{month}}",
+      "target": {
+        "primary": "#month", "fallbacks": ["input[name=month]"], "history": [],
+        "anchor": {
+          "role": "textbox", "name": "Billing month", "nameNormalized": "billing month",
+          "attrs": { "testId": null, "name": "month", "type": "text" },
+          "nearText": ["Invoices", "Load invoices"],
+          "landmarks": ["main", "section[Invoices]"],
+          "siblingOrdinal": 0, "siblingRole": "textbox",
+          "textFingerprint": ["billing", "month", "invoices"]
+        }
+      },
+      "postcondition": { "type": "domChanged" }
+    },
+    {
+      "id": "s2", "action": "click",
+      "target": {
+        "primary": "#load-btn", "fallbacks": ["button[name=load]"], "history": [],
+        "anchor": {
+          "role": "button", "name": "Load invoices", "nameNormalized": "load invoices",
+          "attrs": { "testId": null, "name": "load", "type": "button" },
+          "nearText": ["Export CSV"],
+          "landmarks": ["main", "section[Invoices]"],
+          "siblingOrdinal": 0, "siblingRole": "button",
+          "textFingerprint": ["load", "invoices"]
+        }
+      },
+      "postcondition": { "type": "selectorVisible", "value": "#results" }
+    },
+    {
+      "id": "s3", "action": "extract", "as": "status",
+      "target": {
+        "primary": "#status", "fallbacks": [], "history": [],
+        "anchor": {
+          "role": "generic", "name": "", "nameNormalized": "",
+          "attrs": { "testId": null, "name": null, "type": null },
+          "nearText": ["Load invoices", "Export CSV"],
+          "landmarks": ["main", "section[Invoices]"],
+          "siblingOrdinal": 0, "siblingRole": "generic",
+          "textFingerprint": []
+        }
+      },
+      "postcondition": { "type": "textPresent", "value": "results" }
+    }
+  ]
+}

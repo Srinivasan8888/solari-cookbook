@@ -76,3 +76,55 @@ describe("runFlow", () => {
     expect(result.telemetry.llmCalls).toBe(0)
   })
 })
+
+describe("free repair tier", () => {
+  it("heals an id rename with zero LLM calls and zero dollars", async () => {
+    const mutated = await serveVariant("v2-id-rename")
+    try {
+      // Anchor captured from v1, where the button really was #load-btn.
+      const spec = flow(mutated.url)
+      const step = spec.steps[2]
+      if (step?.action !== "click") throw new Error("expected click")
+      step.target.anchor = {
+        role: "button", name: "Load invoices", nameNormalized: "load invoices",
+        attrs: { testId: null, name: "load", type: "button" },
+        nearText: ["Export CSV"], landmarks: ["main", "section[Invoices]"],
+        siblingOrdinal: 0, siblingRole: "button",
+        textFingerprint: ["load", "invoices"],
+      }
+
+      const result = await runFlow(spec, { month: "2026-08" }, {
+        backend: localBackend(),
+        healer: null, // deliberately no healer: this must be free
+      })
+
+      expect(result.status).toBe("ok")
+      expect(result.telemetry.llmCalls).toBe(0)
+      expect(result.telemetry.costUsd).toBe(0)
+      const healed = result.steps.find((s) => s.stepId === "s2")
+      expect(healed?.status).toBe("healed")
+      expect(healed?.tier).toBe("anchor")
+      expect(healed?.selectorUsed).toBe("#btn-load")
+      expect(result.repaired?.version).toBe(2)
+    } finally {
+      await mutated.close()
+    }
+  })
+})
+
+describe("the committed artifact", () => {
+  it("parses and runs green against the demo site", async () => {
+    const onDisk = loadFlow(new URL("../flows/invoice-export.json", import.meta.url).pathname)
+    const rebased = {
+      ...onDisk,
+      url: server.url,
+      steps: onDisk.steps.map((s) => (s.action === "goto" ? { ...s, url: server.url } : s)),
+    }
+    const result = await runFlow(rebased, { month: "2026-08" }, {
+      backend: localBackend(), healer: null,
+    })
+    expect(result.status).toBe("ok")
+    expect(result.telemetry.llmCalls).toBe(0)
+    expect(result.output.status).toContain("3 results")
+  })
+})
