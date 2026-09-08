@@ -13,8 +13,8 @@ SOLARI_API_KEY=slr_live_... npm run check -- --backend solari --proof proof/sola
 hosted in a Solari sandbox on its public preview URL (guest Node v18.20.4),
 2026-09-08, Starter plan.
 
-Both agree on all six classes: `free` leaks `export`, `eu-consent-rejected`
-leaks `tracker`, the other four pass. That agreement is the point — the sandbox
+Both agree on all six classes: `anon` leaks `tracker`, `free` leaks `export`,
+`eu-consent-rejected` leaks both, and the other three pass. That agreement is the point — the sandbox
 runs the same `demo-site/site.js` the local run serves, so a divergence would
 mean the cloud was checking a different app.
 

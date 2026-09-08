@@ -25,10 +25,10 @@ async function failing(site: DemoSite) {
 }
 
 describe("demo site", () => {
-  it("with the planted bugs, exactly free and eu-consent-rejected fail", async () => {
+  it("with the planted bugs, exactly anon, free and eu-consent-rejected fail", async () => {
     const site = await serve(0, { leakExportToFree: true, trackerBeforeConsent: true })
     try {
-      expect(await failing(site)).toEqual(["free", "eu-consent-rejected"])
+      expect(await failing(site)).toEqual(["anon", "free", "eu-consent-rejected"])
     } finally {
       await site.close()
     }

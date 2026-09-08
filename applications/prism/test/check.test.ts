@@ -26,7 +26,11 @@ describe("judge", () => {
 })
 
 describe("check", () => {
-  const fake = (probe: Backend["probe"]): Backend => ({ name: "fake", probe, close: async () => {} })
+  // A backend now owns its own backpressure predicate, so check() never has to
+  // know which one it got. The fake declares the SDK's real 429 shape.
+  const fake = (probe: Backend["probe"], isBackpressure?: Backend["isBackpressure"]): Backend =>
+    ({ name: "fake", probe, isBackpressure, close: async () => {} })
+  const solari429 = (e: unknown) => e instanceof SolariError && e.status === 429
   const classes: UserClass[] = ["p", "q", "r"].map((name) => ({
     name, because: "", cookies: [], mustSee: ["heading"], mustNotSee: ["admin"],
   }))
@@ -44,7 +48,7 @@ describe("check", () => {
         throw new SolariError("at cap", 429, undefined, "ConcurrencyLimitExceeded")
       }
       return { testids: ["heading"], title: "", url: "" }
-    })
+    }, solari429)
     const events: number[] = []
     const results = await check(backend, "http://example.test/", classes, (e) => events.push(e.concurrency))
 

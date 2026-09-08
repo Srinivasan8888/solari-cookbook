@@ -36,8 +36,6 @@ export async function check(
   classes: UserClass[] = CLASSES,
   onEvent?: (e: { type: string; concurrency: number }) => void,
 ): Promise<ClassResult[]> {
-  const { isConcurrencyLimit } = await import("./backends-solari.js")
-
   const results = await runFleet(
     classes.map((cls) => async (): Promise<ClassResult> => {
       const t0 = Date.now()
@@ -48,7 +46,7 @@ export async function check(
         saw: probe.testids, findings, ms: Date.now() - t0,
       }
     }),
-    { isBackpressure: isConcurrencyLimit, onEvent },
+    { isBackpressure: backend.isBackpressure ?? (() => false), onEvent },
   )
 
   return results.map((r, i) => r.value ?? {

@@ -2,12 +2,12 @@
   "backend": "local",
   "classes": 6,
   "bugsPlanted": true,
-  "target": "http://127.0.0.1:57999",
+  "target": "http://127.0.0.1:61632",
   "backpressureEvents": [],
   "results": [
     {
       "name": "anon",
-      "ok": true,
+      "ok": false,
       "saw": [
         "tracker",
         "heading",
@@ -16,8 +16,13 @@
         "signin",
         "quota"
       ],
-      "findings": [],
-      "ms": 1196
+      "findings": [
+        {
+          "kind": "leaked",
+          "testid": "tracker"
+        }
+      ],
+      "ms": 655
     },
     {
       "name": "free",
@@ -35,7 +40,7 @@
           "testid": "export"
         }
       ],
-      "ms": 1192
+      "ms": 649
     },
     {
       "name": "paid",
@@ -48,7 +53,7 @@
         "quota"
       ],
       "findings": [],
-      "ms": 1183
+      "ms": 645
     },
     {
       "name": "admin",
@@ -62,7 +67,7 @@
         "quota"
       ],
       "findings": [],
-      "ms": 1192
+      "ms": 649
     },
     {
       "name": "eu-consent-rejected",
@@ -79,22 +84,26 @@
         {
           "kind": "leaked",
           "testid": "tracker"
+        },
+        {
+          "kind": "leaked",
+          "testid": "export"
         }
       ],
-      "ms": 1194
+      "ms": 650
     },
     {
-      "name": "eu-consent-accepted",
+      "name": "anon-consent-accepted",
       "ok": true,
       "saw": [
         "tracker",
         "heading",
         "tier",
-        "export",
+        "signin",
         "quota"
       ],
       "findings": [],
-      "ms": 1192
+      "ms": 650
     }
   ]
 }

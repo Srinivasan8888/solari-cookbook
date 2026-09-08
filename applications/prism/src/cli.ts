@@ -18,6 +18,20 @@ import { CLASSES } from "./classes.js"
 import { writeFileSync, mkdirSync } from "node:fs"
 import type { Backend } from "./backend.js"
 
+/**
+ * A cloud browser cannot reach this machine. Match on the parsed hostname, not
+ * a substring: "https://localhost-tools.example.com" is public and must be
+ * allowed, while 0.0.0.0 and [::1] are not and a substring test misses both.
+ */
+function isLoopback(u: string): boolean {
+  let host: string
+  try { host = new URL(u).hostname.toLowerCase() } catch { return false }
+  const bare = host.replace(/^\[|\]$/g, "")
+  return bare === "localhost" || bare.endsWith(".localhost") ||
+    bare === "0.0.0.0" || bare === "::1" || bare === "::" ||
+    /^127\./.test(bare)
+}
+
 const argv = process.argv.slice(2)
 const cmd = argv[0] ?? "check"
 const flag = (n: string, d?: string) => {
@@ -25,13 +39,19 @@ const flag = (n: string, d?: string) => {
   return i >= 0 ? (argv[i + 1] ?? "") : d
 }
 const has = (n: string) => argv.includes(`--${n}`)
+const backendNameEarly = () => flag("backend", "local")!
+
+if (backendNameEarly() !== "local" && backendNameEarly() !== "solari") {
+  console.error(`unknown --backend "${backendNameEarly()}". Use "local" or "solari".`)
+  process.exit(2)
+}
 
 if (cmd !== "check") {
   console.error(`usage: prism check [--backend local|solari] [--url URL] [--fix]`)
   process.exit(2)
 }
 
-const backendName = flag("backend", "local")!
+const backendName = backendNameEarly()
 const bugs = has("fix")
   ? { leakExportToFree: false, trackerBeforeConsent: false }
   : { leakExportToFree: true, trackerBeforeConsent: true }
@@ -46,7 +66,7 @@ if (backendName === "solari") {
     console.error("SOLARI_API_KEY is not set. `--backend local` needs no credentials.")
     process.exit(2)
   }
-  if (url && (url.includes("127.0.0.1") || url.includes("localhost"))) {
+  if (url && isLoopback(url)) {
     console.error(
       "A cloud browser cannot reach a URL on this machine.\n" +
       "Drop --url to have Prism host the demo site in a Solari sandbox, or point\n" +
@@ -63,7 +83,9 @@ if (backendName === "solari") {
     url = hosted.url
     console.error(`demo site: ${url} (guest node ${hosted.nodeVersion})`)
   }
-  backend = await solariBackend({ apiKey })
+  // Seed only the profiles Prism itself created for its own demo site. Against
+  // a real target the profiles were enrolled by a human and must not be touched.
+  backend = await solariBackend({ apiKey, seed: site !== null || has("seed") })
 } else {
   if (!url) {
     site = await serve(0, bugs)
@@ -117,12 +139,23 @@ try {
   // So the demo reports success for finding exactly what it planted.
   const isDemo = site !== null && !has("fix")
   if (isDemo) {
-    const expected = ["free", "eu-consent-rejected"]
-    const found = failed.map((r) => r.name).sort()
-    const asPlanned = JSON.stringify(found) === JSON.stringify([...expected].sort())
+    // Assert WHAT was found, not merely which classes went red. A class can
+    // fail for the wrong reason and still land in the right bucket.
+    const expected: Record<string, string[]> = {
+      anon: ["tracker"],
+      free: ["export"],
+      "eu-consent-rejected": ["export", "tracker"],
+    }
+    const found = Object.fromEntries(
+      failed.map((r) => [r.name, r.findings.map((f) => f.testid).sort()]),
+    )
+    const asPlanned = JSON.stringify(found, Object.keys(found).sort()) ===
+      JSON.stringify(expected, Object.keys(expected).sort())
     console.log(asPlanned
-      ? `\nThis is the expected result: the demo site ships those two bugs on purpose,\nand Prism found both. Run with --fix to serve the corrected app and see it green.`
-      : `\nUnexpected: the demo should fail exactly on ${expected.join(" and ")}.`)
+      ? `\nThis is the expected result: the demo site ships those two bugs on purpose,\n` +
+        `and Prism found every class they touch. Run with --fix to serve the\n` +
+        `corrected app and see the same six classes go green.`
+      : `\nUnexpected. Expected ${JSON.stringify(expected)}\n     but found ${JSON.stringify(found)}.`)
     process.exitCode = asPlanned ? 0 : 1
   } else {
     process.exitCode = failed.length ? 1 : 0

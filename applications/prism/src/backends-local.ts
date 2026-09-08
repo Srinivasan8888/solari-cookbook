@@ -15,13 +15,22 @@ export async function localBackend(): Promise<Backend> {
       const b = await get()
       const origin = new URL(url).origin
       const ctx = await b.newContext()
-      await ctx.addCookies(cookies.map((c) => ({ ...c, url: origin })))
-      const page = await ctx.newPage()
-      await page.goto(url, { waitUntil: "load" })
-      const probe = { testids: await page.evaluate(EXTRACT), title: await page.title(), url: page.url() }
-      await ctx.close()
-      return probe
+      try {
+        await ctx.addCookies(cookies.map((c) => ({ ...c, url: origin })))
+        const page = await ctx.newPage()
+        await page.goto(url, { waitUntil: "load" })
+        return { testids: await page.evaluate(EXTRACT), title: await page.title(), url: page.url() }
+      } finally {
+        // Without the finally, a probe that throws leaks its context: the
+        // browser stays alive holding it and the process never exits.
+        await ctx.close()
+      }
     },
-    async close() { if (launching) await (await launching).close() },
+    async close() {
+      // Never re-throw here. close() runs in the caller's `finally`, so a
+      // rejection would mask the real error and skip the rest of the cleanup.
+      if (!launching) return
+      await launching.then((b) => b.close()).catch(() => {})
+    },
   }
 }

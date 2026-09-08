@@ -19,6 +19,12 @@ export type PageProbe = {
 
 export type Backend = {
   name: string
+  /**
+   * Does this error mean "the account is at its cap", as opposed to a real
+   * failure? Only the backend knows -- `check()` must not import a specific
+   * backend to find out, or it stops being backend-agnostic.
+   */
+  isBackpressure?: (err: unknown) => boolean
   /** Render `url` as this identity and report what was actually on the page. */
   probe(url: string, cookies: { name: string; value: string }[], label: string): Promise<PageProbe>
   close(): Promise<void>

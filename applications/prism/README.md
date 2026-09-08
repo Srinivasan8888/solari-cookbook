@@ -25,18 +25,27 @@ npm run demo
 ```
 | user class | verdict | what was wrong | time |
 |---|---|---|---|
-| anon | pass | as expected | 350ms |
-| free | FAIL | LEAKED export | 351ms |
+| anon | FAIL | LEAKED tracker | 351ms |
+| free | FAIL | LEAKED export | 350ms |
 | paid | pass | as expected | 345ms |
 | admin | pass | as expected | 351ms |
-| eu-consent-rejected | FAIL | LEAKED tracker | 347ms |
-| eu-consent-accepted | pass | as expected | 350ms |
+| eu-consent-rejected | FAIL | LEAKED tracker, LEAKED export | 347ms |
+| anon-consent-accepted | pass | as expected | 350ms |
 ```
 
-`free` reaching the Pro export button is the revenue leak. `eu-consent-rejected`
-still loading the tracker is the compliance breach. Both are planted, both are
-found, and the run exits 0 because finding them is the point. `npm run demo --
+`free` reaching the Pro export button is the revenue leak. The tracker firing
+for anyone who has not consented -- both the fresh visitor and the one who
+explicitly refused -- is the compliance breach. Two bugs, but they surface on
+three identities, and `eu-consent-rejected` reports both because it is also a
+free account. The run exits 0: finding them is the point. `npm run demo --
 --fix` serves the corrected app and all six pass.
+
+Two rules the class list has to obey, both learned by breaking them. No two
+classes may share an identity, or the same page gets judged twice by different
+standards and one verdict is wrong by construction. And every class must reject
+everything it should never see, not just its headline concern -- an earlier
+version let `anon` pass with the tracker on screen, because tracking was
+"someone else's row".
 
 ## How it decides
 
@@ -70,7 +79,16 @@ somewhere you control — a secret store, a committed cookie jar, a file on the
 runner. Prism's `check` phase never holds one.
 
 The demo seeds profile state directly so it reproduces with no accounts. That
-shortcut is demo-only and is the one place credentials appear.
+shortcut is opt-in and nothing else turns it on: against a real target Prism
+refuses to run unless the profile already exists, rather than overwriting a
+session a human enrolled by hand.
+
+```
+no Solari profile named "prism-paid". Enrol it once in the console's live
+browser (console.getsolari.com), or pass --seed to have Prism write demo
+cookies into it. Prism will not create or overwrite a profile you did not
+ask it to.
+```
 
 ## Running on Solari
 
@@ -85,8 +103,8 @@ preview URL — sandbox and browsers on one key. Point `--url` at a real
 deployment to check your own app.
 
 Verified live on 2026-09-08 (Starter): six cloud browsers, six server-side
-profiles, sandbox-hosted site, guest Node v18.20.4. Same two failures and same
-four passes as the local run, ~5.2s per class. The runs are committed in
+profiles, sandbox-hosted site, guest Node v18.20.4. Same verdicts as the local
+run on all six classes, ~8.1s per class. The runs are committed in
 [`proof/`](proof) — `local.json` and `solari.json`, generated with `--proof`.
 
 Two traps that cost time, in case they save you some:
@@ -127,8 +145,10 @@ construction.
   in 29 sessions, so Prism's evidence is its own `proof/` files, not a Solari
   replay.
 - **The tracker check is DOM presence,** not a network assertion. It catches a
-  tracker tag in the markup; a tracker injected later by script would need a
-  request-level check.
+  tracker tag in the markup; a tracker injected later by script, or one that
+  fires without leaving a tagged element, would need a request-level check.
+  Solari can do that over raw CDP -- see `eu-consent-evidence-ts` -- and Prism
+  deliberately does not, because a DOM check is honest about being one.
 - **~18 concurrent, not 20.**
 
 ## Reproducing
@@ -136,7 +156,7 @@ construction.
 ```bash
 npm install
 npx playwright install chromium
-npm test                    # 17 tests, no credentials
+npm test                    # 21 tests, no credentials
 npm run demo                # the two planted bugs, exit 0
 npm run demo -- --fix       # all six pass
 ```
