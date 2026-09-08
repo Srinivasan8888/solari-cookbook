@@ -22,6 +22,7 @@ past. Copy one into your project and change the parts you care about.
 | [browser-playwright-runner-ts](examples/browser-playwright-runner-ts) | TypeScript | Run your existing Playwright suite on Solari, no local Chromium |
 | [eu-consent-evidence-ts](examples/eu-consent-evidence-ts) | TypeScript | Pre-consent tracker evidence via raw CDP |
 | [browser-profile-fleet-ts](examples/browser-profile-fleet-ts) | TypeScript | Three server-side profiles, three browsers at once, each proves it got its own state |
+| [browser-session-ledger-ts](examples/browser-session-ledger-ts) | TypeScript | Track sessions you start so a crashed run does not leak billable slots |
 
 ### Sandbox
 
