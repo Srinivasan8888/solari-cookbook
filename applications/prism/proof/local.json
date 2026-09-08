@@ -1,0 +1,100 @@
+{
+  "backend": "local",
+  "classes": 6,
+  "bugsPlanted": true,
+  "target": "http://127.0.0.1:57999",
+  "backpressureEvents": [],
+  "results": [
+    {
+      "name": "anon",
+      "ok": true,
+      "saw": [
+        "tracker",
+        "heading",
+        "tier",
+        "consent-banner",
+        "signin",
+        "quota"
+      ],
+      "findings": [],
+      "ms": 1196
+    },
+    {
+      "name": "free",
+      "ok": false,
+      "saw": [
+        "tracker",
+        "heading",
+        "tier",
+        "export",
+        "quota"
+      ],
+      "findings": [
+        {
+          "kind": "leaked",
+          "testid": "export"
+        }
+      ],
+      "ms": 1192
+    },
+    {
+      "name": "paid",
+      "ok": true,
+      "saw": [
+        "tracker",
+        "heading",
+        "tier",
+        "export",
+        "quota"
+      ],
+      "findings": [],
+      "ms": 1183
+    },
+    {
+      "name": "admin",
+      "ok": true,
+      "saw": [
+        "tracker",
+        "heading",
+        "tier",
+        "export",
+        "admin",
+        "quota"
+      ],
+      "findings": [],
+      "ms": 1192
+    },
+    {
+      "name": "eu-consent-rejected",
+      "ok": false,
+      "saw": [
+        "tracker",
+        "heading",
+        "tier",
+        "consent-banner",
+        "export",
+        "quota"
+      ],
+      "findings": [
+        {
+          "kind": "leaked",
+          "testid": "tracker"
+        }
+      ],
+      "ms": 1194
+    },
+    {
+      "name": "eu-consent-accepted",
+      "ok": true,
+      "saw": [
+        "tracker",
+        "heading",
+        "tier",
+        "export",
+        "quota"
+      ],
+      "findings": [],
+      "ms": 1192
+    }
+  ]
+}

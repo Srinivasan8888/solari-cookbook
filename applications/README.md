@@ -39,4 +39,4 @@ variable it reads and nothing else.
 
 | Application | Language | What it does |
 | --- | --- | --- |
-| _(none yet)_ | | |
+| [prism](prism) | TypeScript | One URL, every user class at once: prove each sees what it should, from server-side profiles |

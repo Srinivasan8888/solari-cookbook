@@ -21,6 +21,7 @@ past. Copy one into your project and change the parts you care about.
 | [browser-workers-cdp-ts](examples/browser-workers-cdp-ts) | TypeScript | Drive a browser from a Cloudflare Worker, over raw CDP |
 | [browser-playwright-runner-ts](examples/browser-playwright-runner-ts) | TypeScript | Run your existing Playwright suite on Solari, no local Chromium |
 | [eu-consent-evidence-ts](examples/eu-consent-evidence-ts) | TypeScript | Pre-consent tracker evidence via raw CDP |
+| [browser-profile-fleet-ts](examples/browser-profile-fleet-ts) | TypeScript | Three server-side profiles, three browsers at once, each proves it got its own state |
 
 ### Sandbox
 
