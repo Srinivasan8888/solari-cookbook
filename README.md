@@ -31,6 +31,7 @@ past. Copy one into your project and change the parts you care about.
 | [sandbox-quickstart-rb](examples/sandbox-quickstart-rb) | Ruby | Same, with no SDK and no gems — stdlib only |
 | [sandbox-code-interpreter-py](examples/sandbox-code-interpreter-py) | Python | Stateful Python kernel for agent loops |
 | [sandbox-port-preview-ts](examples/sandbox-port-preview-ts) | TypeScript | Expose a server in the VM on a public URL |
+| [sandbox-volume-cache-ts](examples/sandbox-volume-cache-ts) | TypeScript | A dependency cache on a volume that outlives the sandbox |
 | [sandbox-scan-untrusted-code-ts](examples/sandbox-scan-untrusted-code-ts) | TypeScript | Run untrusted code and capture what it did (audit hook) |
 
 ### Multi-product
